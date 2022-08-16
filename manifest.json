@@ -1,5 +1,5 @@
 {
-    "name" : "即日办",
+    "name" : "vote",
     "appid" : "__UNI__44A8AB0",
     "description" : "",
     "versionName" : "2.2.22",
@@ -63,10 +63,11 @@
     "quickapp" : {},
     /* 快应用特有相关 */
     "mp-weixin" : {
-        "appid" : "wx2ba5c5690b35d173",
+        "appid" : "wxf0a517fec043cff1",
         "setting" : {
             "urlCheck" : false,
-            "es6" : true
+            "es6" : true,
+            "minified" : true
         },
         "permission" : {
             "scope.userLocation" : {

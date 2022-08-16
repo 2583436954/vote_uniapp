@@ -1,161 +1,159 @@
-<template name="home">
-	<view>
-		<scroll-view>
-			<!-- 轮播 -->
-			<swiper class="screen-swiper square-dot"  :indicator-dots="true" :circular="true"
-			 :autoplay="true" interval="5000" duration="500" :style="[{animation: 'show 0.2s 1'}]">
-				<swiper-item v-for="(item,index) in swiperList" :key="index">
-					<image :src="item.url" mode="aspectFill" v-if="item.type=='image'"></image>
-					<video :src="item.url" autoplay loop muted :show-play-btn="false" :controls="false" objectFit="cover" v-if="item.type=='video'"></video>
-				</swiper-item>
-			</swiper>
-			
-			<!-- 常用服务 -->
-			<view class="cu-bar bg-white solid-bottom" :style="[{animation: 'show 0.5s 1'}]">
-				<view class="action">
-					<text class='cuIcon-title text-blue'></text>常用服务
-				</view>
-			</view>
-				
-			<view class="cu-list grid col-4 text-sm">
-				<view class="cu-item animation-slide-bottom" :style="[{animationDelay: (index + 1)*0.05 + 's'}]" v-for="(item,index) in usList" :key="index" @tap="goPage(item.page)">
-					<view class="padding text-center">
-						<image :src="item.icon" style="width:28px;height:28px;">
-							<view class="cu-tag badge margin-top-sm" style="margin-left:1.2em" v-if="getTtemDotInfo(item)">
-							   <block v-if="getTtemDotInfo(item)">{{getTtemDotInfo(item)}}</block>
-							</view>
-						</image>
-						<view class="margin-top-xs">{{item.title}}</view>
-					</view>
-				</view>
-			</view>
-				
-			<!-- 其他服务 -->
-			<view class="cu-bar bg-white solid-bottom margin-top"  :style="[{animation: 'show 0.6s 1'}]">
-				<view class="action">
-					 <text class='cuIcon-title text-yellow'></text>其他服务
-				</view>
-			</view>
-			<view class="cu-list grid col-4 text-sm">
-				<view class="cu-item animation-slide-bottom" :style="[{animationDelay: (index + 1)*0.1 + 's'}]" v-for="(item,index) in osList" :key="index" @tap="goPage(item.page)">
-					<view class="padding text-center">
-						<image :src="item.icon" style="width:28px;height:28px;"/>
-						<view class="margin-top-xs">{{item.title}}</view>
-					</view>
-				</view>
-			</view>
-		</scroll-view>
-		<view class="cu-tabbar-height margin-top"></view>
+<template>
+	<view class="all">
+		<view class="title2" >
+			当前票数:{{voteCustomer.poll}}
+		</view>
+		<view class="title">
+			活动主题：{{voteActivityThemeVo.activityName}}
+		</view>
+		<view class="box" v-for="(item,index) in voteActivityThemeVo.voteActivityContentList" @click.stop="toShowMySelf" :data-pid=item.id>
+			<image class="image" v-bind:src="item.voteImageList.length > 0 ?item.voteImageList[0].imgUrl : imageBaseUrl +  defaultUrl" ></image>
+			<text class="briefIntroduction">简介：{{item.briefIntroduction.length > 8 ? item.briefIntroduction.substring(0,8)+"...":item.briefIntroduction}}</text>
+			<text class="briefIntroduction">编号 : {{item.number}}</text>
+			<text class="briefIntroduction">目前票数 : {{item.sumPoll}}</text>
+			<button class="buttonStyle" @click.stop="vote" :data-id=item.id> 投票 </button>
+		</view>
 	</view>
+	
 </template>
 
 <script>
-	import { us,os } from '@/common/util/work.js'
-	import socket from '@/common/js-sdk/socket/socket.js'
+	import * as http from '../../api/api.js';
+	import {getMessageByOpenId,goVote} from '../../common/method.js' 
 	export default {
-		name: 'home',
-		props:{
-			cur:String,
-		},
-		watch: {
-			cur: {
-				immediate: true,
-				handler:function(val,oldVal){
-					console.log('cur',val,oldVal)
-				    this.initMenu()
-				},
-			},
-		},
+		
 		data() {
 			return {
-			 swiperList: [
-				  {id:1,type: 'image',url: '/static/banner/banner1.png', link: ''},
-				  {id:2,type: 'image',url: '/static/banner/banner2.jpg', link: ''},
-				  {id:3,type: 'image',url: '/static/banner/banner3.jpg', link: ''},
-				  {id:4,type: 'image',url: '/static/banner/banner4.jpg', link: ''},
-				],
-				middleApps: [
-				  {icon: 'line2_icon1.png', title: '审批', 'text': '个人审批'},
-				  {icon: 'line2_icon2.png', title: '审批稿', 'text': '审批草稿箱'},
-				],
-				usList:us.data,
-				osList:os.data,
-				msgCount:0,
-				dot:{
-				  mailHome:false
-				}
+				openId:'',
+				imageBaseUrl : http.imageBaseUrl,
+				defaultUrl:'image/wmc1638774545017752045S01mpBqzl3GY25542c511f663a2f5042db777efa09b3.png',
+				voteCustomer:{},
+				voteActivityThemeVo:{}
+				
 			}
 		},
 		methods: {
-			initMenu(){
-				console.log("-----------home------------")
-			    this.onSocketOpen()
-			    this.onSocketReceive()
-			    this.loadCount(0);
-			},
-			goPage(page){
-				if(!page){
-					return false;
+			vote(e){
+				var that = this;
+				if(this.voteCustomer.poll <= 0){
+					uni.showToast({
+						icon: 'none',
+						title: '票数不足',
+						duration: 1500,
+						position: 'bottom'
+					})
 				}
-				if(page==='annotationList'){
-				  this.msgCount = 0
-				}
-				this.dot[page]=false
-				this.$Router.push({name: page})
-			},
-			// 启动webSocket
-			onSocketOpen() {
-				socket.init('websocket');
-			},
-			onSocketReceive() {
-				var _this=this
-				socket.acceptMessage = function(res){
-					// console.log("页面收到的消息", res);
-					if(res.cmd == "topic"){
-					  //系统通知
-					  _this.loadCount('1')
-					}else if(res.cmd == "user"){
-					  //用户消息
-					  _this.loadCount('2')
-					} else if(res.cmd == 'email'){
-					 //邮件消息
-					  _this.loadEmailCount()
+				console.log(e.currentTarget.dataset.id);
+				var cid = e.currentTarget.dataset.id;
+				goVote({
+					openId:that.openId,
+					activityContentId:cid
+				},res=>{
+					if(res.success){
+						uni.showToast({
+							title: '投票成功',
+							icon: "success",
+							mask: true,
+							duration: 1000
+						})
+						this.loading(that.openId);
 					}
-				}
+					
+				})
+				
 			},
-			loadCount(flag){
-				console.log("loadCount::flag",flag)
-				let url = '/sys/annountCement/listByUser';
-				this.$http.get(url).then(res=>{
-					console.log("res::",res)
-				  if(res.data.success){
-					let msg1Count = res.data.result.anntMsgTotal;
-					let msg2Count = res.data.result.sysMsgTotal;
-					this.msgCount = msg1Count + msg2Count
-					console.log("this.msgCount",this.msgCount)
-				  }
+			loading(openId){
+				var that = this;
+				getMessageByOpenId({
+					'openId':openId
+				},res=>{
+					that.voteCustomer = res.result.voteCustomer;
+					that.voteActivityThemeVo = res.result.voteActivityThemeVo;
 				})
 			},
-			loadEmailCount(){
-				this.dot.mailHome = true
-			},
-			getTtemDotInfo(item){
-				if(item.page==='annotationList' && this.msgCount>0){
-				  return this.msgCount
-				}
-				return '';
+			toShowMySelf(e){
+				console.log("eid",e.currentTarget.dataset.pid)
+				let pid = e.currentTarget.dataset.pid;
+				uni.navigateTo({
+					url:'../showMySelf/showMySelf?id='+pid
+				})
 			}
+		},
+		onShow(){
+			
+			var that = this
+			//先去查看是否登录
+			const openId = uni.getStorageSync("openId");
+			this.openId = openId;
+			console.log("openId",openId)
+			if(openId == undefined || openId === ''){
+				uni.redirectTo({
+					url:'../login/login'
+				})
+			}
+			console.log("调用getMessageByOpenId接口")
+			this.loading(openId);
+		},
+		onLoad() {
+			console.log("onload")
 		}
+		
 	}
 </script>
 
-<style scoped>
-	.cu-list.grid>.cu-item {
-	  padding: 0px 0px; 
+<style>
+	.all{
+		width: 750rpx;
+		background-color: #EDE1D9;
+		
+	},
+	.title{
+		color: #ED1C24;
+		width: 100%;
+		height: 100rpx;
+		font-size: 30;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	},
+	.title2{
+		margin-top: 50rpx;
+		color: #ED1C24;
+		width: 100%;
+		height: 50rpx;
+		font-size: 30;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	},
+	.box{
+		width: 375rpx;
+		background-color: #CCE6FF;
+		height:600rpx;
+		border-style: solid;
+		border-color: #AAAAAA;
+		/* float: left;
+		 */
+		display: inline-block;
+		
 	}
-    .line2-icon {
-	  width: 60px;
-	  height: 60px;
-    }
+	.image{
+		margin-left: 50rpx;
+		display: flex;
+		 align-items: center; 
+		justify-content: center;
+		width: 275rpx;
+		height:275rpx;
+		border-radius: 200rpx;
+	}
+	.briefIntroduction{
+		display: inline-block;
+		width: 375rpx;
+		height: 50rpx;
+	}
+	.buttonStyle{
+		width: 200rpx;
+		border-radius: 200rpx;
+	}
 	
 </style>

@@ -2,10 +2,13 @@
 	"pages": [
 		//pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
 		{
-			"path": "pages/index/index",
+			"path": "pages/login/login",
 			"style": {}
 		},
 		{
+			"path": "pages/index/index",
+			"style": {}
+		},{
 			"path": "pages/basics/layout",
 			"style": {}
 		},
@@ -103,10 +106,7 @@
 		}, {
 			"path": "pages/home/home",
 			"style": {}
-		}, {
-			"path": "pages/login/login",
-			"style": {}
-		}, {
+		},  {
 			"path": "pages/user/userexit",
 			"style": {}
 		}, {
@@ -160,7 +160,28 @@
 			"style": {}
 		}
 		
-	],
+	    
+        
+        
+        ,{
+            "path" : "pages/peoplelis/peoplelis",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+        ,{
+            "path" : "pages/showMySelf/showMySelf",
+            "style" :                                                                                    
+            {
+                "navigationBarTitleText": "",
+                "enablePullDownRefresh": false
+            }
+            
+        }
+    ],
 	"globalStyle": {
 		"mp-alipay": {
 			/* 支付宝小程序特有相关 */
